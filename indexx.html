@@ -11,7 +11,6 @@ body {
     background: black;
     color: white;
     font-family: monospace;
-    overflow: hidden;
 }
 
 /* ENTRY */
@@ -25,7 +24,6 @@ body {
     position: relative;
 }
 
-/* DARK OVERLAY */
 #entry::after {
     content: "";
     position: absolute;
@@ -34,7 +32,6 @@ body {
     background: rgba(0,0,30,0.85);
 }
 
-/* ANIMATED LIGHT GLOW */
 #entry::before {
     content: "";
     position: absolute;
@@ -50,7 +47,6 @@ body {
     100% { transform: translate(-20%, -20%); }
 }
 
-/* TEXT */
 .enter {
     z-index: 2;
     font-size: 26px;
@@ -58,9 +54,10 @@ body {
 }
 
 /* PASSWORD */
-#passwordBox {
+#passwordBox, #access {
     display: none;
     z-index: 2;
+    text-align: center;
 }
 
 input {
@@ -72,16 +69,10 @@ input {
 }
 
 button {
+    padding: 10px;
     margin-top: 10px;
-    padding: 8px;
     cursor: pointer;
-}
-
-/* ACCESS TEXT */
-#access {
-    display: none;
-    z-index: 2;
-    font-size: 22px;
+    width: 100%;
 }
 
 /* STORE */
@@ -101,6 +92,27 @@ button {
 .card {
     background: #111;
     padding: 10px;
+    text-align: center;
+}
+
+img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* CART */
+#cartBox {
+    display: none;
+    background: #111;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 </head>
@@ -109,55 +121,75 @@ button {
 
 <!-- ENTRY -->
 <div id="entry">
+    <div class="enter" onclick="showPassword()">> ENTER</div>
 
-    <div class="enter" onclick="showPassword()">
-        > ENTER
-    </div>
-
-    <!-- PASSWORD -->
     <div id="passwordBox">
         <p>ENTER PASSWORD</p>
         <input type="password" id="pass">
         <button onclick="checkPass()">Submit</button>
     </div>
 
-    <!-- ACCESS -->
     <div id="access"></div>
-
 </div>
 
 <!-- STORE -->
 <div id="store">
+
     <h2>IronVow</h2>
-    <p id="cart">Cart (0)</p>
+
+    <p onclick="toggleCart()" style="cursor:pointer;">
+        Cart (<span id="cartCount">0</span>) - KES <span id="total">0</span>
+    </p>
 
     <div class="grid">
+
+        <!-- REPLACE IMAGES WITH YOUR CANVA EXPORTS -->
         <div class="card">
-            <img src="https://via.placeholder.com/200x250">
-            <p>Iron Tee</p>
-            <button onclick="addCart()">Add</button>
+            <img src="tee.png">
+            <h3>Iron Tee</h3>
+            <p>KES 1200</p>
+            <button onclick="addCart('Iron Tee',1200)">Add</button>
         </div>
 
         <div class="card">
-            <img src="https://via.placeholder.com/200x250">
-            <p>Warrior Hoodie</p>
-            <button onclick="addCart()">Add</button>
+            <img src="hoodie.png">
+            <h3>Warrior Hoodie</h3>
+            <p>KES 3500</p>
+            <button onclick="addCart('Warrior Hoodie',3500)">Add</button>
         </div>
+
+        <div class="card">
+            <img src="cap.png">
+            <h3>Minimal Cap</h3>
+            <p>KES 900</p>
+            <button onclick="addCart('Minimal Cap',900)">Add</button>
+        </div>
+
     </div>
+
+    <!-- CART -->
+    <div id="cartBox">
+        <h3>Your Cart</h3>
+        <ul id="cartItems"></ul>
+        <p>Total: KES <span id="cartTotal">0</span></p>
+        <button onclick="checkout()">Checkout (M-Pesa)</button>
+    </div>
+
 </div>
 
 <audio id="sound" src="https://www.soundjay.com/button/sounds/button-09.mp3"></audio>
 
 <script>
-let cart = 0;
+let cart = [];
+let total = 0;
 let password = "iron"; // CHANGE THIS
 
-function showPassword() {
-    document.querySelector(".enter").style.display = "none";
-    document.getElementById("passwordBox").style.display = "block";
+function showPassword(){
+    document.querySelector(".enter").style.display="none";
+    document.getElementById("passwordBox").style.display="block";
 }
 
-function checkPass() {
+function checkPass(){
     let input = document.getElementById("pass").value;
 
     if(input === password){
@@ -168,34 +200,78 @@ function checkPass() {
     }
 }
 
-/* TYPING EFFECT */
-function typeAccess() {
-    document.getElementById("passwordBox").style.display = "none";
-    let text = "ACCESS GRANTED";
-    let i = 0;
-    let access = document.getElementById("access");
-    access.style.display = "block";
+function typeAccess(){
+    document.getElementById("passwordBox").style.display="none";
+    let text="ACCESS GRANTED";
+    let i=0;
+    let access=document.getElementById("access");
+    access.style.display="block";
 
-    let typing = setInterval(() => {
-        access.innerHTML += text[i];
+    let typing=setInterval(()=>{
+        access.innerHTML+=text[i];
         i++;
-        if(i >= text.length){
+        if(i>=text.length){
             clearInterval(typing);
-            setTimeout(() => {
-                enterStore();
-            }, 1000);
+            setTimeout(enterStore,1000);
         }
-    }, 100);
+    },100);
 }
 
-function enterStore() {
-    document.getElementById("entry").style.display = "none";
-    document.getElementById("store").style.display = "block";
+function enterStore(){
+    document.getElementById("entry").style.display="none";
+    document.getElementById("store").style.display="block";
 }
 
-function addCart() {
-    cart++;
-    document.getElementById("cart").innerText = "Cart (" + cart + ")";
+/* CART */
+function addCart(name,price){
+    cart.push({name,price});
+    total+=price;
+    updateCart();
+}
+
+function updateCart(){
+    document.getElementById("cartCount").innerText=cart.length;
+    document.getElementById("total").innerText=total;
+    document.getElementById("cartTotal").innerText=total;
+
+    let list=document.getElementById("cartItems");
+    list.innerHTML="";
+
+    cart.forEach((item,index)=>{
+        let li=document.createElement("li");
+        li.innerHTML=`${item.name} - KES ${item.price} 
+        <button onclick="removeItem(${index})">X</button>`;
+        list.appendChild(li);
+    });
+}
+
+function removeItem(index){
+    total-=cart[index].price;
+    cart.splice(index,1);
+    updateCart();
+}
+
+function toggleCart(){
+    let box=document.getElementById("cartBox");
+    box.style.display=box.style.display==="none"?"block":"none";
+}
+
+/* M-PESA (WHATSAPP) */
+function checkout(){
+    if(cart.length===0){
+        alert("Cart is empty");
+        return;
+    }
+
+    let message="IRONVOW ORDER:%0A";
+
+    cart.forEach(item=>{
+        message+=item.name+" - KES "+item.price+"%0A";
+    });
+
+    message+="%0ATotal: KES "+total;
+
+    window.open("https://wa.me/254799218520?text="+message,"_blank");
 }
 </script>
 
